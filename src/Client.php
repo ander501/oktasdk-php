@@ -59,7 +59,7 @@ class Client
 
         $domain = $config['preview'] ? 'oktapreview.com' : 'okta.com';
 
-        $this->client = new GuzzleClient ([
+        $this->client = new GuzzleClient([
             'base_uri'   => 'https://' . $org . '.' . $domain . '/api/' . $config['apiVersion'] . '/',
             'exceptions' => false,
             'headers'    => array_merge([

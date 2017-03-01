@@ -29,7 +29,6 @@ class User extends Base
         if (isset($credentials)) $request->data(['credentials' => $credentials]);
 
         if (isset($provider)) {
-
             $request->data([
                 'credentials' => [
                     'provider' => $provider
@@ -37,7 +36,6 @@ class User extends Base
             ]);
 
             $request->query(['provider' => true]);
-
         }
 
         if (isset($activate)) $request->query(['activate' => $activate]);
