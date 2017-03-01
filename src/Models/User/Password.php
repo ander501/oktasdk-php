@@ -4,19 +4,11 @@ namespace Okta\Models\User;
 
 class Password
 {
+    /** @var string Password value */
+    public $value;
 
-    protected $password;
-
-    public function password($password = null) {
-
-        if (isset($password)) {
-            $this->password = $password;
-            return $this;
-        }
-
-        return $this->password;
-
+    public function __construct($value)
+    {
+        $this->value = $value;
     }
-
-
 }

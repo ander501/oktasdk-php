@@ -4,30 +4,15 @@ namespace Okta\Models\User;
 
 class RecoveryQuestion
 {
+    /** @var string Recovery question */
+    public $question;
 
-    protected $question;
-    protected $answer;
+    /** @var string Recovery question answer */
+    public $answer;
 
-    public function question($question = null) {
-
-        if (isset($question)) {
-            $this->question = $question;
-            return $this;
-        }
-
-        return $this->question;
-
+    public function __construct($question, $answer)
+    {
+        $this->qusetion = $question;
+        $this->answer = $answer;
     }
-
-    public function answer($answer = null) {
-
-        if (isset($answer)) {
-            $this->answer = $answer;
-            return $this;
-        }
-
-        return $this->answer;
-
-    }
-
 }

@@ -4,7 +4,5 @@ namespace Okta\Models\User;
 
 class Properties
 {
-
     // ...
-
 }
