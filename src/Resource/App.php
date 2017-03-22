@@ -12,138 +12,139 @@ class App extends Base
     /**
      * Adds a new application to your Okta organization.
      *
-     * @param  string $name       Application name
-     * @param  string $label      Application label
-     * @param  string $signOnMode Application sign on mode
-     * @param  array  $settings   Associative array of application settings
-     * @param  bool   $activate   If true, executes activation lifecycle
-     *                            operation when creating the application
+     * @param  string  $name  Application name
+     * @param  string  $label  Application label
+     * @param  string  $signOnMode  Application sign on mode
+     * @param  array  $settings  Associative array of application settings
+     * @param  bool  $activate  If true, executes activation lifecycle
+     *                           operation when creating the application
      *
-     * @return object             Application object
+     * @return object  Application object
      */
-    public function add($name, $label, $signOnMode, array $settings = null, $activate = null)
+    public function add($name, $label, $signOnMode, array $settings = [], $activate = true)
     {
-        $request = $this->request->post('apps');
-
-        $request->data([
-            'name'       => $name,
-            'label'      => $label,
-            'signOnMode' => $signOnMode,
+        $response = $this->client->post('apps', [
+            'json' => [
+                'name' => $name,
+                'label' => $label,
+                'signOnMode' => $signOnMode,
+                'settings' => ['app' => $settings],
+                'activate' => $activate
+            ]
         ]);
 
-        if (isset($settings)) $request->data(['settings' => ['app' => $settings]]);
-        if (isset($activate)) $request->query(['activate' => $activate]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Fetches an application from your Okta organization by id.
      *
-     * @param  string $aid Application ID
+     * @param  string  $aid  Application ID
      *
-     * @return object      Application object
+     * @return object  Application object
      */
     public function get($aid)
     {
-        $request = $this->request->get('apps/' . $aid);
+        $response = $this->client->get('apps/' . $aid);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Enumerates apps added to your organization with pagination. A subset of
      * apps can be returned that match a supported filter expression or query.
      *
-     * @param  array $query Array of query parameters/values
+     * @param  array  $query  Array of query parameters/values
      *
-     * @return array        Array of Application objects
+     * @return array  Array of Application objects
      */
-    public function listApps(array $query = null)
+    public function listApps(array $query = [])
     {
-        $request = $this->request->get('apps');
+        $response = $this->client->get('apps', [
+            'query' => $query
+        ]);
 
-        if (isset($query)) $request->query($query);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Updates an application in your organization.
      *
-     * @param  string $aid ID of application to update
-     * @param  array  $app Associative array of updated application data
+     * @param  string  $aid  ID of application to update
+     * @param  array  $app  Associative array of updated application data
      *
-     * @return object      Application object
+     * @return object  Application object
      */
     public function update($aid, array $app)
     {
-        $request = $this->request->put('apps/' . $aid);
+        $response = $this->client->put('apps/' . $aid, [
+            'json' => $app
+        ]);
 
         $request->data($app);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Removes an inactive application. Applications must be deactivated before
      * they can be deleted.
      *
-     * @param  string $aid ID of application to delete
+     * @param  string  $aid  ID of application to delete
      *
-     * @return object      An empty JSON object {}
+     * @return object  An empty JSON object {}
      */
     public function delete($aid)
     {
-        $request = $this->request->delete('apps/' . $aid);
+        $response = $this->client->delete('apps/' . $aid);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Activates an inactive application.
      *
-     * @param  string $aid ID of application to activate
+     * @param  string  $aid  ID of application to activate
      *
-     * @return object      An empty JSON object {}
+     * @return object  An empty JSON object {}
      */
     public function activate($aid)
     {
-        $request = $this->request->post('apps/' . $aid . '/lifecycle/activate');
+        $response = $this->client->post('apps/' . $aid . '/lifecycle/activate');
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Deactivates an inactive application.
      *
-     * @param  string $aid ID of application to deactivate
+     * @param  string  $aid  ID of application to deactivate
      *
-     * @return object      An empty JSON object {}
+     * @return object  An empty JSON object {}
      */
     public function deactivate($aid)
     {
-        $request = $this->request->post('apps/' . $aid . '/lifecycle/deactivate');
+        $response = $this->client->post('apps/' . $aid . '/lifecycle/deactivate');
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Assigns an user to an application.
      *
-     * @param  string $aid     Unique key of Application
-     * @param  array  $appuser Array of user credentials and (optional) profile
-     *                         for the app
+     * @param  string  $aid  Unique key of Application
+     * @param  array  $appuser  Array of user credentials and (optional) profile
+     *                          for the app
      *
-     * @return object          Application User object
+     * @return object  Application User object
      */
     public function assignUser($aid, array $appuser)
     {
-        $request = $this->request->post('apps/' . $aid . '/users');
+        $response = $this->client->post('apps/' . $aid . '/users', [
+            'json' => $appuser
+        ]);
 
-        $request->data($appuser);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
@@ -156,48 +157,50 @@ class App extends Base
      */
     public function getUser($aid, $uid)
     {
-        $request = $this->request->get('apps/' . $aid . '/users/' . $uid);
+        $response = $this->client->get('apps/' . $aid . '/users/' . $uid);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Enumerates all assigned application users for an application.
      *
-     * @param  string $aid   Unique key of Application
-     * @param  int    $limit Specifies the number of results for a page
-     * @param  string $after Specifies the pagination cursor for the next page
-     *                       of assignments
+     * @param  string  $aid  Unique key of Application
+     * @param  int  $limit  Specifies the number of results for a page
+     * @param  string  $after  Specifies the pagination cursor for the next page
+     *                         of assignments
      *
-     * @return array        Array of Application Users
+     * @return array  Array of Application Users
      */
     public function listUsers($aid, $limit = null, $after = null)
     {
-        $request = $this->request->get('apps/' . $aid . '/users');
+        $response = $this->client->get('apps/' . $aid . '/users', [
+            'query' => [
+                'limit' => $limit,
+                'after' => $after
+            ]
+        ]);
 
-        if (isset($limit)) $request->query(['limit' => $limit]);
-        if (isset($after)) $request->query(['after' => $after]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Updates a user's credentials and/or profile for an assigned application
      *
-     * @param  string $aid     Unique key of Application
-     * @param  string $uid     Unique key of assigned User
-     * @param  array  $appuser Array of user credentials and (optional) profile
-     *                         for the app
+     * @param  string  $aid  Unique key of Application
+     * @param  string  $uid  Unique key of assigned User
+     * @param  array  $appuser  Array of user credentials and (optional) profile
+     *                          for the app
      *
-     * @return object          Application User
+     * @return object  Application User
      */
     public function updateUser($aid, $uid, array $appuser)
     {
-        $request = $this->request->post('apps/' . $aid . '/users/' . $uid);
+        $response = $this->client->post('apps/' . $aid . '/users/' . $uid, [
+            'json' => ['appuser' => $appuser]
+        ]);
 
-        $request->data($appuser);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
@@ -208,141 +211,141 @@ class App extends Base
      * deactivate users, the user will also be deactivated in the target
      * application.
      *
-     * @param  string $aid Unique key of Application
-     * @param  string $uid Unique key of assigned User
+     * @param  string  $aid  Unique key of Application
+     * @param  string  $uid  Unique key of assigned User
      *
-     * @return object      An empty object
+     * @return object  An empty object
      */
     public function removeUser($aid, $uid)
     {
-        $request = $this->request->delete('apps/' . $aid . '/users/' . $uid);
+        $response = $this->client->delete('apps/' . $aid . '/users/' . $uid);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Assigns a group to an application
      *
-     * @param  string $aid      Unique key of Application
-     * @param  string $gid      Unique key of a valid Group
-     * @param  array  $appgroup App group
+     * @param  string  $aid  Unique key of Application
+     * @param  string  $gid  Unique key of a valid Group
+     * @param  array  $appgroup  App group
      *
-     * @return object           The assigned Application Group
+     * @return object  The assigned Application Group
      */
-    public function assignGroup($aid, $gid, array $appgroup)
+    public function assignGroup($aid, $gid, array $appgroup = [])
     {
-        $request = $this->request->put('apps/' . $aid . '/groups/' . $gid);
+        $response = $this->client->put('apps/' . $aid . '/groups/' . $gid, [
+            'json' => ['appgroup' => $appgroup]
+        ]);
 
-        $request->data($appgroup);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Fetches an application group assignment
      *
-     * @param  string $aid Unique key of Application
-     * @param  string $gid Unique key of a valid Group
+     * @param  string  $aid  Unique key of Application
+     * @param  string  $gid  Unique key of a valid Group
      *
-     * @return object      Application Group
+     * @return object  Application Group
      */
     public function getGroup($aid, $gid)
     {
-        $request = $this->request->get('apps/' . $aid . '/groups/' . $gid);
+        $response = $this->client->get('apps/' . $aid . '/groups/' . $gid);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Enumerates group assignments for an application.
      *
-     * @param  string $aid Unique key of Application
+     * @param  string  $aid  Unique key of Application
      *
-     * @return array       Array of Application Groups
+     * @return array  Array of Application Groups
      */
     public function listGroups($aid)
     {
-        $request = $this->request->get('apps/' . $aid . '/groups');
+        $response = $this->client->get('apps/' . $aid . '/groups');
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Removes a group assignment from an application.
      *
-     * @param  string $aid Unique key of Application
-     * @param  string $gid Unique key of a valid Group
+     * @param  string  $aid  Unique key of Application
+     * @param  string  $gid  Unique key of a valid Group
      *
-     * @return object      An empty JSON object {}
+     * @return object  An empty JSON object {}
      */
     public function removeGroup($aid, $gid)
     {
-        $request = $this->request->delete('apps/' . $aid . '/groups/' . $gid);
+        $response = $this->client->delete('apps/' . $aid . '/groups/' . $gid);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Generates a new X.509 certificate for an application key credential
      *
-     * @param  string $aid           Unique key of Application
-     * @param  int    $validityYears Expiry of the Application Key Credential
+     * @param  string $aid  Unique key of Application
+     * @param  int  $validityYears  Expiry of the Application Key Credential
      *
-     * @return object                The generated Application Key Credential
+     * @return object  The generated Application Key Credential
      */
     public function generateKey($aid, $validityYears)
     {
-        $request = $this->request->post('apps/' . $aid . '/credentials/keys/generate');
+        $response = $this->client->post('apps/' . $aid . '/credentials/keys/generate', [
+            'query' => ['validityYears' => $validityYears]
+        ]);
 
-        $request->query(['validityYears' => $validityYears]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Enumerates key credentials for an application
      *
-     * @param  string $aid Unique key of Application
+     * @param  string  $aid  Unique key of Application
      *
-     * @return array       Array of Application Key Credentials
+     * @return array  Array of Application Key Credentials
      */
     public function listKeys($aid)
     {
-        $request = $this->request->get('apps/' . $aid . '/credentials/keys');
+        $response = $this->client->get('apps/' . $aid . '/credentials/keys');
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Gets a specific application key credential by kid
      *
-     * @param  string $aid Unique key of Application
-     * @param  string $kid Unique key of Application Key Credential
+     * @param  string  $aid  Unique key of Application
+     * @param  string  $kid  Unique key of Application Key Credential
      *
-     * @return object      Application Key Credential
+     * @return object  Application Key Credential
      */
     public function getKey($aid, $kid)
     {
-        $request = $this->request->get('apps/' . $aid . '/credentials/keys/' . $kid);
+        $response = $this->client->get('apps/' . $aid . '/credentials/keys/' . $kid);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Preview SAML metadata based on a specific key credential for an
      * application
      *
-     * @param  string $aid Unique key of Application
-     * @param  string $kid Unique key of Application Key Credential
+     * @param  string  $aid  Unique key of Application
+     * @param  string  $kid  Unique key of Application Key Credential
      *
-     * @return string      SAML metadata in XML
+     * @return string  SAML metadata in XML
      */
     public function getSaml($aid, $kid)
     {
-        $request = $this->request->get('apps/' . $aid . '/sso/saml/metadata');
+        $response = $this->client->get('apps/' . $aid . '/sso/saml/metadata', [
+            'query' => ['kid' => $kid]
+        ]);
 
-        $request->query(['kid' => $kid]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 }

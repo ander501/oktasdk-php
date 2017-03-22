@@ -12,114 +12,110 @@ class User extends Base
     /**
      * Creates a new user in your Okta organization with or without credentials.
      *
-     * @param  array   $profile     Array of user profile properties
-     * @param  array   $credentials Array of user credentials
-     * @param  array   $provider    Array of authentication provider properties
-     * @param  boolean $activate    Weather or not to execute activation
-     *                              lifecycle operation when creating the user
+     * @param  array   $profile  Array of user profile properties
+     * @param  array   $credentials  Array of user credentials
+     * @param  boolean   $provider  Indicates whether to create a user with a
+     *                              specified authentication provider
+     * @param  boolean  $activate  Weather or not to execute activation
+     *                             lifecycle operation when creating the user
      *
-     * @return object               User model object
+     * @return object  User model object
      */
-    public function create(array $profile, array $credentials = null, array $provider = null, $activate = null)
+    public function create(array $profile, array $credentials = [], $provider = false, $activate = true)
     {
-        $request = $this->request->post('users');
+        $response = $this->client->post('users', [
+            'json' => [
+                'profile' => $profile,
+                'credentials' => $credentials
+            ],
+            'query' => [
+                'provider' => $provider,
+                'activate' => $activate
+            ]
+        ]);
 
-        $request->data(['profile' => $profile]);
-
-        if (isset($credentials)) $request->data(['credentials' => $credentials]);
-
-        if (isset($provider)) {
-            $request->data([
-                'credentials' => [
-                    'provider' => $provider
-                ]
-            ]);
-
-            $request->query(['provider' => true]);
-        }
-
-        if (isset($activate)) $request->query(['activate' => $activate]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Fetches a user from your Okta organization.
      *
-     * @param  string $uid User ID
+     * @param  string  $uid  User ID
      *
-     * @return object      User model object
+     * @return object  User model object
      */
     public function get($uid)
     {
-        $request = $this->request->get('users/' . $uid);
+        $response = $this->client->get('users/' . $uid);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Enumerates users in your organization with pagination. A subset of users
      * can be returned that match a supported filter expression or query.
      *
-     * @param  array $query Array of query parameters/values
+     * @param  array  $query  Array of query parameters/values
      *
-     * @return array        Array of user objects
+     * @return array  Array of user objects
      */
-    public function listUsers(array $query = null)
+    public function listUsers(array $query = [])
     {
-        $request = $this->request->get('users');
+        $response = $this->client->get('users', [
+            'query' => $query
+        ]);
 
-        if (isset($query)) $request->query($query);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Update a user's profile and/or credentials with partial update semantics.
      *
-     * @param  string $uid         ID of user to update
-     * @param  array  $profile     Array of user profile properties
-     * @param  array  $credentials Array of credential properties
+     * @param  string  $uid  ID of user to update
+     * @param  array  $profile  Array of user profile properties
+     * @param  array  $credentials  Array of credential properties
      *
-     * @return object              Updated user object
+     * @return object  Updated user object
      */
-    public function update($uid, array $profile = null, array $credentials = null)
+    public function update($uid, array $profile = [], array $credentials = [])
     {
-        $request = $this->request->post('users/' . $uid);
+        $response = $this->client->post('users/' . $uid, [
+            'json' => [
+                'profile' => $profile,
+                'credentials' => $credentials
+            ]
+        ]);
 
-        if (isset($profile))     $request->data(['profile' => $profile]);
-        if (isset($credentials)) $request->data(['credentials' => $credentials]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Fetches appLinks for all direct or indirect (via group membership)
      * assigned applications.
      *
-     * @param  string $uid ID of user
+     * @param  string  $uid  ID of user
      *
-     * @return array       Array of App Links
+     * @return array  Array of App Links
      */
     public function apps($uid)
     {
-        $request = $this->request->get('users/' . $uid . '/appLinks');
+        $response = $this->client->get('users/' . $uid . '/appLinks');
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Fetches the groups of which the user is a member.
      *
-     * @param  string $uid ID of user
+     * @param  string  $uid  ID of user
      *
-     * @return array       Array of group objects
+     * @return array  Array of group objects
      */
     public function groups($uid)
     {
-        $request = $this->request->get('users/' . $uid . '/groups');
+        $response = $this->client->get('users/' . $uid . '/groups');
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
@@ -130,20 +126,20 @@ class User extends Base
      * asynchronous operation. The user will have a status of ACTIVE when the
      * activation process is complete.
      *
-     * @param  string $uid       ID of user
-     * @param  bool   $sendEmail Sends an activation email to the user if true
+     * @param  string  $uid  ID of user
+     * @param  bool   $sendEmail  Sends an activation email to the user if true
      *
-     * @return object            Returns empty object by default. When sendEmail
-     *                           is false, returns an activation link for the
-     *                           user to set up their account.
+     * @return object  Returns empty object by default. When sendEmail is false,
+     *                 returns an activation link for the user to set up their
+     *                 account.
      */
     public function activate($uid, $sendEmail = null)
     {
-        $request = $this->request->post('users/' . $uid . '/lifecycle/activate');
+        $response = $this->client->post('users/' . $uid . '/lifecycle/activate', [
+            'query' => ['sendEmail' => $sendEmail]
+        ]);
 
-        if (isset($sendEmail)) $request->query(['sendEmail' => $sendEmail]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
@@ -154,15 +150,15 @@ class User extends Base
      * that the user hasn't completed the asynchronous operation. The user will
      * have a status of DEPROVISIONED when the deactivation process is complete.
      *
-     * @param  string $uid ID of user
+     * @param  string  $uid  ID of user
      *
-     * @return empty       Returns an empty object
+     * @return empty  Returns an empty object
      */
     public function deactivate($uid)
     {
-        $request = $this->request->post('users/' . $uid . '/lifecycle/deactivate');
+        $response = $this->client->post('users/' . $uid . '/lifecycle/deactivate');
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
@@ -174,15 +170,15 @@ class User extends Base
      * E0000007. Passing an id that is not in the ACTIVE state returns a 400 Bad
      * Request status code with error code E0000001.
      *
-     * @param  string $uid ID of user
+     * @param  string  $uid  ID of user
      *
-     * @return object      Returns an empty object
+     * @return object  Returns an empty object
      */
     public function suspend($uid)
     {
-        $request = $this->request->post('users/' . $uid . '/lifecycle/suspend');
+        $response = $this->client->post('users/' . $uid . '/lifecycle/suspend');
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
@@ -193,30 +189,30 @@ class User extends Base
      * E0000007. Passing an id that is not in the SUSPENDED state returns a 400
      * Bad Request status code with error code E0000001.
      *
-     * @param  string $uid ID of user
+     * @param  string  $uid  ID of user
      *
-     * @return object      Returns an empty object
+     * @return object  Returns an empty object
      */
     public function unsuspend($uid)
     {
-        $request = $this->request->post('users/' . $uid . '/lifecycle/unsuspend');
+        $response = $this->client->post('users/' . $uid . '/lifecycle/unsuspend');
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Unlocks a user with a LOCKED_OUT status and returns them to ACTIVE
      * status. Users will be able to login with their current password.
      *
-     * @param  string $uid ID of user
+     * @param  string  $uid  ID of user
      *
-     * @return object      Returns an empty object
+     * @return object  Returns an empty object
      */
     public function unlock($uid)
     {
-        $request = $this->request->post('users/' . $uid . '/lifecycle/unlock');
+        $response = $this->client->post('users/' . $uid . '/lifecycle/unlock');
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
@@ -228,20 +224,20 @@ class User extends Base
      * user will not be able to login or initiate a forgot password flow until
      * they complete the reset flow.
      *
-     * @param  string $uid       ID of user
-     * @param  bool   $sendEmail Sends reset password email to the user if true
+     * @param  string  $uid  ID of user
+     * @param  bool  $sendEmail  Sends reset password email to the user if true
      *
-     * @return object            Returns an empty object by default. When
-     *                           sendEmail is false, returns a link for the user
-     *                           to reset their password.
+     * @return object  Returns an empty object by default. When sendEmail is
+     *                 false, returns a link for the user to reset their
+     *                 password.
      */
-    public function resetPassword($uid, $sendEmail = null)
+    public function resetPassword($uid, $sendEmail = true)
     {
-        $request = $this->request->post('users/' . $uid . '/lifecycle/reset_password');
+        $response = $this->client->post('users/' . $uid . '/lifecycle/reset_password', [
+            'query' => ['sendEmail' => $sendEmail]
+        ]);
 
-        if (isset($sendEmail)) $request->query(['sendEmail' => $sendEmail]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
@@ -251,19 +247,19 @@ class User extends Base
      * temporary password that is returned, and then the temporary password is
      * expired.
      *
-     * @param  string $uid           User ID
-     * @param  boolean $tempPassword Sets the user's password to a temporary
-     *                               password, if true
+     * @param  string  $uid  User ID
+     * @param  boolean  $tempPassword  Sets the user's password to a temporary
+     *                                 password, if true
      *
-     * @return object                User object
+     * @return object  User object
      */
-    public function expirePassword($uid, $tempPassword = null)
+    public function expirePassword($uid, $tempPassword = false)
     {
-        $request = $this->request->post('users/' . $uid . '/lifecycle/expire_password');
+        $response = $this->client->post('users/' . $uid . '/lifecycle/expire_password', [
+            'query' => ['tempPassword' => $tempPassword]
+        ]);
 
-        if (isset($tempPassword)) $request->query(['tempPassword' => $tempPassword]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
@@ -272,15 +268,15 @@ class User extends Base
      * ACTIVE. This link is present only if the user is currently enrolled in
      * one or more MFA factors.
      *
-     * @param  string $uid ID of user
+     * @param  string  $uid  ID of user
      *
-     * @return object      Returns an empty object by default
+     * @return object  Returns an empty object by default
      */
     public function resetFactors($uid)
     {
-        $request = $this->request->post('users/' . $uid . '/lifecycle/reset_factors');
+        $response = $this->client->post('users/' . $uid . '/lifecycle/reset_factors');
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
@@ -288,20 +284,20 @@ class User extends Base
      * password. This operation can only be performed on users with a valid
      * recovery question credential and have an ACTIVE status.
      *
-     * @param  string $uid       User ID
-     * @param  bool   $sendEmail Sends a forgot password email to the user if true
+     * @param  string  $uid  User ID
+     * @param  bool  $sendEmail  Sends a forgot password email to the user if true
      *
-     * @return object            Returns an empty object by default. When
-     *                           sendEmail is false, returns a link for the user
-     *                           to reset their password.
+     * @return object  Returns an empty object by default. When sendEmail is
+     *                 false, returns a link for the user to reset their
+     *                 password.
      */
-    public function forgotPassword($uid, $sendEmail = null)
+    public function forgotPassword($uid, $sendEmail = false)
     {
-        $request = $this->request->post('users/' . $uid . '/credentials/forgot_password');
+        $response = $this->client->post('users/' . $uid . '/credentials/forgot_password', [
+            'query' => ['sendEmail' => $sendEmail]
+        ]);
 
-        if (isset($sendEmail)) $request->query(['sendEmail' => $sendEmail]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
@@ -309,24 +305,24 @@ class User extends Base
      * current recovery question. This operation can only be performed on users
      * with a valid recovery question credential and have an ACTIVE status.
      *
-     * @param  string $uid            User ID
-     * @param  string $password       New password for user
-     * @param  string $recoveryAnswer Answer to user's current recovery question
+     * @param  string  $uid  User ID
+     * @param  string  $password  New password for user
+     * @param  string  $recoveryAnswer  Answer to user's current recovery question
      *
-     * @return object                 User Credentials object
+     * @return object  User Credentials object
      */
     public function forgotPasswordReset($uid, $password, $recoveryAnswer)
     {
-        $request = $this->request->post('users/' . $uid . '/credentials/forgot_password');
-
-        $request->data([
-            'password'          => $password,
-            'recovery_question' => [
-                'answer' => $recoveryAnswer
+        $response = $this->client->post('users/' . $uid . '/credentials/forgot_password', [
+            'json' => [
+                'password'          => $password,
+                'recovery_question' => [
+                    'answer' => $recoveryAnswer
+                ]
             ]
         ]);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
@@ -335,48 +331,48 @@ class User extends Base
      * PASSWORD_EXPIRED, or RECOVERY status that have a valid password
      * credential
      *
-     * @param  string $uid     User ID
-     * @param  string $oldPass Current password for user
-     * @param  string $newPass New passwor for user
+     * @param  string  $uid  User ID
+     * @param  string  $oldPass  Current password for user
+     * @param  string  $newPass  New passwor for user
      *
-     * @return object          User credentials object
+     * @return object  User credentials object
      */
     public function changePassword($uid, $oldPass, $newPass)
     {
-        $request = $this->request->post('users/' . $uid . '/credentials/change_password');
-
-        $request->data([
-            'oldPassword' => $oldPass,
-            'newPassword' => $newPass
+        $response = $this->client->post('users/' . $uid . '/credentials/change_password', [
+            'json' => [
+                'oldPassword' => $oldPass,
+                'newPassword' => $newPass
+            ]
         ]);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Modify a users's security question
      *
-     * @param  string $uid      User ID
-     * @param  string $password User's password
-     * @param  string $question New securrity question
-     * @param  string $answer   Answer to security question
+     * @param  string  $uid  User ID
+     * @param  string  $password  User's password
+     * @param  string  $question  New securrity question
+     * @param  string  $answer  Answer to security question
      *
-     * @return object           Security question object
+     * @return object  Security question object
      */
     public function changeRecoveryQuestion($uid, $password, $question, $answer)
     {
-        $request = $this->request->post('users/' . $uid . '/credentials/change_recovery_question');
-
-        $request->data([
-            'password' => [
-                'value' => $password
-            ],
-            'recovery_question' => [
-                'question' => $question,
-                'answer'   => $answer
+        $response = $this->client->post('users/' . $uid . '/credentials/change_recovery_question', [
+            'json' => [
+                'password' => [
+                    'value' => $password
+                ],
+                'recovery_question' => [
+                    'question' => $question,
+                    'answer'   => $answer
+                ]
             ]
         ]);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 }

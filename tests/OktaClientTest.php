@@ -46,6 +46,9 @@ class OktaClientTest extends PHPUnit_Framework_TestCase
 
     public function testNonBootstrappedResourcePropertiesAreNull() {
         $okta = new Okta\Client('test', 'not_a_real_key', ['bootstrap' => false]);
+
+        $this->setExpectedException('PHPUnit_Framework_Error');
+
         $this->assertNull($okta->app);
         $this->assertNull($okta->auth);
         $this->assertNull($okta->event);

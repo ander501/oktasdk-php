@@ -12,13 +12,13 @@ class Schema extends Base
     /**
      * Fetches the default schema for a User
      *
-     * @return object User Schema
+     * @return  object  User Schema
      */
     public function getUser()
     {
-        $request = $this->request->get('meta/schemas/user/default');
+        $response = $this->client->get('meta/schemas/user/default');
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
@@ -28,17 +28,17 @@ class Schema extends Base
      * Properties must be explicitly set to null to be removed from schema,
      * otherwise the POST will be interpreted as a partial update.
      *
-     * @param array $definitions Array of subschema properties with one or more
-     *                           custom profile properties
+     * @param  array  $definitions  Array of subschema properties with one or
+     *                              more custom profile properties
      *
-     * @return obeject           User Schema
+     * @return obeject  User Schema
      */
     public function userProperty(array $definitions)
     {
-        $request = $this->request->post('meta/schemas/user/default');
+        $response = $this->client->post('meta/schemas/user/default', [
+            'json' => ['definitions' => $definitions]
+        ]);
 
-        $request->data(['definitions' => $definitions]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 }

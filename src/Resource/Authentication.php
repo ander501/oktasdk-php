@@ -16,32 +16,30 @@ class Authentication extends Base
      * determine if the user's password is expired, a factor should be enrolled,
      * or additional verification is required.
      *
-     * @param  string $username   User's non-qualified short-name or unique
+     * @param  string  $username  User's non-qualified short-name or unique
      *                            fully-qualified login
-     * @param  string $password   User's password credential
-     * @param  string $relayState Optional state value that is persisted for the
-     *                            lifetime of the authentication transaction
-     * @param  array  $options    Array of opt-in features for the
-     *                            authentication transaction
-     * @param  array  $context    Array of additional context properties for the
-     *                            authentication transaction
+     * @param  string  $password  User's password credential
+     * @param  array  $params  Array of optional parameters:
+     *                         - relayState (string): Optional state value that
+     *                         is persisted for the lifetime of the
+     *                         authentication transaction (max length: 2048)
+     *                         - options (array): Array of opt-in features for
+     *                         the authentication transaction
+     *                         - context (array): Array of additional context
+     *                         properties for the authentication transaction
      *
-     * @return object             Authentication Transaction Object
+     * @return object  Authentication Transaction Object
      */
-    public function authn($username, $password, $relayState = null, array $options = null, array $context = null)
+    public function authn($username, $password, $params = [])
     {
-        $request = $this->request->post('authn');
-
-        $request->data([
-            'username' => $username,
-            'password' => $password
+        $response = $this->client->post('authn', [
+            'json' => array_merge($params, [
+                'username' => $username,
+                'password' => $password
+            ])
         ]);
 
-        if (isset($relayState)) $request->data(['relayState' => $relayState]);
-        if (isset($options))    $request->data(['options' => $options]);
-        if (isset($context))    $request->data(['context' => $context]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
@@ -56,103 +54,99 @@ class Authentication extends Base
      *   - A user may opt-out of changing their password (skip) when the
      *     transaction has a PASSWORD_WARN status
      *
-     * @param  string $stateToken  State token for current transaction
-     * @param  string $oldPassword User's current password that is expired or
-     *                             about to expire
-     * @param  string $newPassword New password for user
+     * @param  string  $stateToken  State token for current transaction
+     * @param  string  $oldPassword  User's current password that is expired or
+     *                               about to expire
+     * @param  string  $newPassword  New password for user
      *
-     * @return object              Authentication Transaction Object
+     * @return object  Authentication Transaction Object
      */
     public function changePassword($stateToken, $oldPassword, $newPassword)
     {
-        $request = $this->request->post('authn/credentials/change_password');
-
-        $request->data([
-            'stateToken'  => $stateToken,
-            'oldPassword' => $oldPassword,
-            'newPassword' => $newPassword
+        $response = $this->client->post('authn/credentials/change_password', [
+            'json' => [
+                'stateToken'  => $stateToken,
+                'oldPassword' => $oldPassword,
+                'newPassword' => $newPassword
+            ]
         ]);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Enrolls a user with a factor assigned by their MFA Policy.
      *
-     * @param  string $stateToken State token for current transaction
-     * @param  string $factorType Type of factor
-     * @param  string $provider   Factor provider
-     * @param  array  $profile    Associative array containing profile
-     *                            key/values of a supported factor
-     * @param  array  $query      Array of query parameters/values
+     * @param  string  $stateToken  State token for current transaction
+     * @param  string  $factorType  Type of factor
+     * @param  string  $provider  Factor provider
+     * @param  array  $profile  Associative array containing profile key/values
+     *                          of a supported factor
      *
-     * @return object             Authentication Transaction Object
+     * @return object  Authentication Transaction Object
      */
-    public function enrollFactor($stateToken, $factorType, $provider, array $profile = null, array $query = null)
+    public function enrollFactor($stateToken, $factorType, $provider, array $profile)
     {
-        $request = $this->request->post('authn/factors');
-
-        $request->data([
+        $response = $this->client->post('authn/factors', [
             'stateToken' => $stateToken,
             'factorType' => $factorType,
-            'provider'   => $provider
+            'provider' => $provider,
+            'profile' => $profile
         ]);
 
-        if (isset($profile)) $request->data(['profile' => $profile]);
-        if (isset($query))   $request->query($query);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Activates a factor by verifying the OTP.
      *
-     * @param  string $stateToken State token for current transaction
-     * @param  string $fid        ID of factor returned from enrollment
-     * @param  string $passCode   OTP generated by device
+     * @param  string  $stateToken  State token for current transaction
+     * @param  string  $fid  ID of factor returned from enrollment
+     * @param  string  $passCode  OTP generated by device
      *
-     * @return object             Authentication Transaction Object
+     * @return object  Authentication Transaction Object
      */
     public function activateFactor($stateToken, $fid, $passCode)
     {
-        $request = $this->request->post('authn/factors/' . $fid . '/lifecycle/activate');
-
-        $request->data([
-            'stateToken' => $stateToken,
-            'passCode'   => $passCode
+        $response = $this->client->post('authn/factors/' . $fid . '/lifecycle/activate', [
+            'json' => [
+                'stateToken' => $stateToken,
+                'passCode'   => $passCode
+            ]
         ]);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Verifies an enrolled factor for an authentication transaction with the
      * MFA_REQUIRED or MFA_CHALLENGE state
      *
-     * @param  string $stateToken   State token for current transaction
-     * @param  string $fid          ID of factor returned from enrollment
-     * @param  array  $verification Array of verification properties
+     * @param  string  $stateToken  State token for current transaction
+     * @param  string  $fid  ID of factor returned from enrollment
+     * @param  array  $verification  Array of verification properties
      *
-     * @return object               Authentication Transaction Object
+     * @return object  Authentication Transaction Object
      */
-    public function verifyFactor($stateToken, $fid, array $verification)
+    public function verifyFactor($stateToken, $fid, array $verification = [])
     {
-        $request = $this->request->post('authn/factors/' . $fid . '/verify');
+        $response = $this->client->post('authn/factors/' . $fid . '/verify', [
+            'json' => array_merge($verification, [
+                'stateToken' => $stateToken
+            ])
+        ]);
 
-        $request->data(['stateToken' => $stateToken]);
-        $request->data($verification);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Convinience method for verifying an answer to a question factor.
      *
-     * @param  string $stateToken State token for current transaction
-     * @param  string $fid        ID of factor returned from enrollment
-     * @param  string $answer     Answer to security question
+     * @param  string  $stateToken State token for current transaction
+     * @param  string  $fid  ID of factor returned from enrollment
+     * @param  string  $answer  Answer to security question
      *
-     * @return object             Authentication Transaction Object
+     * @return object  Authentication Transaction Object
      */
     public function verifySecuirtyQuestionFactor($stateToken, $fid, $answer)
     {
@@ -162,11 +156,11 @@ class Authentication extends Base
     /**
      * Convinience method for verifying a pass code from an SMS factor.
      *
-     * @param  string $stateToken State token for current transaction
-     * @param  string $fid        ID of factor returned from enrollment
-     * @param  string $passCode   OTP sent to device
+     * @param  string  $stateToken  State token for current transaction
+     * @param  string  $fid  ID of factor returned from enrollment
+     * @param  string  $passCode  OTP sent to device
      *
-     * @return object             Authentication Transaction Object
+     * @return object  Authentication Transaction Object
      */
     public function verifySmsFactor($stateToken, $fid, $passCode)
     {
@@ -176,11 +170,11 @@ class Authentication extends Base
     /**
      * Convinience method for verifying an OTP for a token:software:totp factor.
      *
-     * @param  string $stateToken State token for current transaction
-     * @param  string $fid        ID of factor returned from enrollment
-     * @param  string $passCode   OTP sent to device
+     * @param  string  $stateToken State token for current transaction
+     * @param  string  $fid  ID of factor returned from enrollment
+     * @param  string  $passCode  OTP sent to device
      *
-     * @return object             Authentication Transaction Object
+     * @return object  Authentication Transaction Object
      */
     public function verifyTotpFactor($stateToken, $fid, $passCode)
     {
@@ -190,194 +184,191 @@ class Authentication extends Base
     /**
      * Convienience mthod for sending an SMS challenge to a user's device
      *
-     * @param  string $stateToken State token for current transaction
-     * @param  string $fid        ID of factor returned from enrollment
+     * @param  string  $stateToken  State token for current transaction
+     * @param  string  $fid  ID of factor returned from enrollment
      *
-     * @return object             Authentication Transaction Object
+     * @return object  Authentication Transaction Object
      */
     public function sendSmsChallenge($stateToken, $fid)
     {
-        return $this->verifyFactor($stateToken, $fid, []);
+        return $this->verifyFactor($stateToken, $fid);
     }
 
     /**
      * Resends an SMS challenge to a user's device
      *
-     * @param  string $stateToken State token for current transaction
-     * @param  string $fid        ID of factor returned from enrollment
+     * @param  string  $stateToken  State token for current transaction
+     * @param  string  $fid  ID of factor returned from enrollment
      *
-     * @return object             Authentication Transaction Object
+     * @return object  Authentication Transaction Object
      */
     public function resendSmsChallenge($stateToken, $fid)
     {
-        $request = $this->request->post('authn/factors/' . $fid . '/verify/resend');
+        $response = $this->client->post('authn/factors/' . $fid . '/verify/resend', [
+            'json' => ['stateToken' => $stateToken]
+        ]);
 
-        $request->data(['stateToken' => $stateToken]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Starts a new password recovery transaction for a given user and issues a
      * recovery token that can be used to reset a user's password.
      *
-     * @param  string $username   User's non-qualified short-name or unique
+     * @param  string  $username  User's non-qualified short-name or unique
      *                            fully-qualified login
-     * @param  string $factorType Recovery factor to use for primary
-     *                            authentication (EMAIL or SMS)
-     * @param  string $relayState Optional state value that is persisted for the
-     *                            lifetime of the recovery transaction
+     * @param  array  $params  Array of optional parameters:
+     *                         - factorType (string): Recovery factor to use for
+     *                         primary authentication (EMAIL or SMS)
+     *                         - relayState (string): Optional state value that
+     *                         is persisted for the lifetime of the recovery
+     *                         transaction
      *
-     * @return object             Recovery Transaction Object
+     * @return object  Recovery Transaction Object
      */
-    public function forgotPassword($username, $factorType = null, $relayState = null)
+    public function forgotPassword($username, $params = [])
     {
-        $request = $this->request->post('authn/recovery/password');
+        $response = $this->client->post('authn/recovery/password', [
+            'json' => array_merge($params, ['username' => $username])
+        ]);
 
-        $request->data(['username' => $username]);
-
-        if (isset($factorType)) $request->data(['factorType' => $factorType]);
-        if (isset($relayState)) $request->data(['relayState' => $relayState]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Starts a new unlock recovery transaction for a given user and issues a
      * recovery token that can be used to unlock a user's account.
      *
-     * @param  string $username   User's non-qualified short-name or unique
+     * @param  string  $username  User's non-qualified short-name or unique
      *                            fully-qualified login
-     * @param  string $factorType Recovery factor to use for primary
-     *                            authentication (EMAIL or SMS)
-     * @param  string $relayState Optional state value that is persisted for the
-     *                            lifetime of the recovery transaction
+     * @param  string  $factorType  Recovery factor to use for primary
+     *                              authentication (EMAIL or SMS)
+     * @param  string  $relayState  Optional state value that is persisted for
+     *                              the lifetime of the recovery transaction
      *
-     * @return object             Recovery Transaction Object
+     * @return object  Recovery Transaction Object
      */
-    public function unlockAccount($username, $factorType = null, $relayState = null)
+    public function unlockAccount($username, $params = [])
     {
-        $request = $this->request->post('authn/recovery/unlock');
+        $response = $this->client->post('authn/recovery/unlock', [
+            'json' => array_merge($params, ['username' => $username])
+        ]);
 
-        $request->data(['username' => $username]);
-
-        if (isset($factorType)) $request->data(['factorType' => $factorType]);
-        if (isset($relayState)) $request->data(['relayState' => $relayState]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Verifies a SMS OTP (passCode) sent to the user's mobile phone for primary
      * authentication for a recovery transaction with RECOVERY_CHALLENGE status.
      *
-     * @param  string $stateToken State token for current recovery transaction
-     * @param  string $passCode   OTP sent to device
+     * @param  string  $stateToken  State token for current recovery transaction
+     * @param  string  $passCode  OTP sent to device
      *
-     * @return object             Recovery Transaction Object
+     * @return object  Recovery Transaction Object
      */
     public function verifySmsRecoveryFactor($stateToken, $passCode)
     {
-        $request = $this->request->post('authn/recovery/factors/sms/verify');
-
-        $request->data([
-            'stateToken' => $stateToken,
-            'passCode'   => $passCode
+        $response = $this->client->post('authn/recovery/factors/sms/verify', [
+            'json' => [
+                'stateToken' => $stateToken,
+                'passCode'   => $passCode
+            ]
         ]);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Validates a recovery token that was distributed to the end-user to
      * continue the recovery transaction.
      *
-     * @param  string $recoveryToken Recovery token that was distributed to
-     *                               end-user via out-of-band mechanism such as email
+     * @param  string  $recoveryToken  Recovery token that was distributed to
+     *                                 end-user via out-of-band mechanism such
+     *                                 as email
      *
-     * @return object                Recovery Transaction Object
+     * @return object  Recovery Transaction Object
      */
     public function verifyRecoveryToken($recoveryToken)
     {
-        $request = $this->request->post('authn/recovery/token');
+        $response = $this->client->post('authn/recovery/token', [
+            'json' => ['recoveryToken' => $recoveryToken]
+        ]);
 
-        $request->data(['recoveryToken' => $recoveryToken]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Answers the user's recovery question to ensure only the end-user redeemed
      * the recovery token for recovery transaction with a RECOVERY status.
      *
-     * @param  string $stateToken State token for current transaction
-     * @param  string $answer     Answer to user's recovery question
+     * @param  string  $stateToken  State token for current transaction
+     * @param  string  $answer  Answer to user's recovery question
      *
-     * @return object             Recovery Transaction Object
+     * @return object  Recovery Transaction Object
      */
     public function answerRecoveryQuestion($stateToken, $answer)
     {
-        $request = $this->request->post('authn/recovery/answer');
-
-        $request->data([
-            'stateToken' => $stateToken,
-            'answer'     => $answer
+        $response = $this->client->post('authn/recovery/answer', [
+            'json' => [
+                'stateToken' => $stateToken,
+                'answer'     => $answer
+            ]
         ]);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Resets a user's password to complete a recovery transaction with a
      * PASSWORD_RESET state.
      *
-     * @param  string $stateToken  State token for current transaction
-     * @param  string $newPassword User's new password
+     * @param  string  $stateToken  State token for current transaction
+     * @param  string  $newPassword  User's new password
      *
-     * @return object              Recovery Transaction Object
+     * @return object  Recovery Transaction Object
      */
     public function resetPassword($stateToken, $newPassword)
     {
-        $request = $this->request->post('authn/credentials/reset_password');
-
-        $request->data([
-            'stateToken'  => $stateToken,
-            'newPassword' => $newPassword
+        $response = $this->client->post('authn/credentials/reset_password', [
+            'json' => [
+                'stateToken'  => $stateToken,
+                'newPassword' => $newPassword
+            ]
         ]);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Retrieves the current transaction state for a state token.
      *
-     * @param  string $stateToken State token for a transaction
+     * @param  string  $stateToken  State token for a transaction
      *
-     * @return object              Recovery Transaction Object
+     * @return object  Recovery Transaction Object
      */
     public function getState($stateToken)
     {
-        $request = $this->request->post('authn');
+        $response = $this->client->post('authn', [
+            'json' => ['stateToken' => $stateToken]
+        ]);
 
-        $request->data(['stateToken' => $stateToken]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Moves the current transaction state back to the previous state.
      *
-     * @param  string $stateToken State token for a transaction
+     * @param  string  $stateToken  State token for a transaction
      *
-     * @return object              Recovery Transaction Object
+     * @return object  Recovery Transaction Object
      */
     public function previousState($stateToken)
     {
-        $request = $this->request->post('authn/previous');
+        $response = $this->client->post('authn/previous', [
+            'json' => ['stateToken' => $stateToken]
+        ]);
 
-        $request->data(['stateToken' => $stateToken]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
@@ -385,34 +376,34 @@ class Authentication extends Base
      * operation is only available for MFA_ENROLL or PASSWORD_WARN states when
      * published as a link
      *
-     * @param  string $stateToken State token for a transaction
+     * @param  string  $stateToken  State token for a transaction
      *
-     * @return object              Recovery Transaction Object
+     * @return object  Recovery Transaction Object
      */
     public function skipState($stateToken)
     {
-        $request = $this->request->post('authn/skip');
+        $response = $this->client->post('authn/skip', [
+            'json' => ['stateToken' => $stateToken]
+        ]);
 
-        $request->data(['stateToken' => $stateToken]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Cancels the current transaction and revokes the state token.
      *
-     * @param  string $stateToken State token for a transaction
+     * @param  string  $stateToken  State token for a transaction
      *
-     * @return object             Empty object or object containing optional
-     *                            state value that was persisted for the
-     *                            authentication or recovery transaction
+     * @return object  Empty object or object containing optional state value
+     *                 that was persisted for the authentication or recovery
+     *                 transaction
      */
     public function cancel($stateToken)
     {
-        $request = $this->request->post('authn/cancel');
+        $response = $this->client->post('authn/cancel', [
+            'json' => ['stateToken' => $stateToken]
+        ]);
 
-        $request->data(['stateToken' => $stateToken]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 }

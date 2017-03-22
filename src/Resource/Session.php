@@ -14,53 +14,48 @@ class Session extends Base
      * this operation if you need the session id, otherwise you should use one
      * of the following flows to obtain a SSO session with a sessionToken
      *
-     * @param  string $sessionToken     Session token obtained via
-     *                                  Authentication API
-     * @param  string $additionalFields Comma separated string of optional
-     *                                  session properties
+     * @param  string  $sessionToken  Session token obtained via Authentication API
+     * @param  string  $additionalFields  Comma separated string of optional
+     *                                    session properties
      *
-     * @return object                   The new Session for the user if the
-     *                                  sessionToken was valid. Invalid
-     *                                  sessionToken will return a 401
-     *                                  Unauthorized status code.
+     * @return object  The new Session for the user if the sessionToken was
+     *                 valid. Invalid sessionToken will return a 401
+     *                 Unauthorized status code.
      */
     public function create($sessionToken, $additionalFields = null)
     {
-        $request = $this->request->post('sessions');
+        $response = $this->client->post('sessions', [
+            'json' => ['sessionToken' => $sessionToken],
+            'query' => ['additionalFields' => $additionalFields]
+        ]);
 
-        $request->data(['sessionToken' => $sessionToken]);
-
-        if (isset($additionalFields)) $request->query(['additionalFields' => $additionalFields]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Extends the lifetime of a user's session.
      *
-     * @param  string $id ID of a valid session
-     * @return empty      Invalid sessions will return a 404 Not Found status
-     *                    code.
+     * @param  string  $id  ID of a valid session
+     * @return empty  Invalid sessions will return a 404 Not Found status code.
      */
     public function extend($id)
     {
-        $request = $this->request->put('sessions/' . $id);
+        $response = $this->client->put('sessions/' . $id);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Closes a user's session (logout).
      *
-     * @param  string $id ID of a valid session
+     * @param  string  $id  ID of a valid session
      *
-     * @return empty      Invalid sessions will return a 404 Not Found status
-     *                    code.
+     * @return empty  Invalid sessions will return a 404 Not Found status code.
      */
     public function close($id)
     {
-        $request = $this->request->delete('sessions/' . $id);
+        $response = $this->client->delete('sessions/' . $id);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 }

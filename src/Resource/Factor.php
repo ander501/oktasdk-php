@@ -12,53 +12,53 @@ class Factor extends Base
     /**
      * Fetches a factor for the specified user.
      *
-     * @param  string $uid User ID
-     * @param  string $fid Factor ID
+     * @param  string  $uid User ID
+     * @param  string  $fid Factor ID
      *
-     * @return object      Factor object
+     * @return object  Factor object
      */
     public function get($uid, $fid)
     {
-        $request = $this->request->get('users/' . $uid . '/factors/' . $fid);
+        $response = $this->client->get('users/' . $uid . '/factors/' . $fid);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Enumerates all the enrolled factors for the specified user.
      *
-     * @param  string $uid User ID
+     * @param  string  $uid User ID
      *
-     * @return array       Array of Factors
+     * @return array  Array of Factors
      */
     public function listEnrolled($uid)
     {
-        $request = $this->request->get('users/' . $uid . '/factors');
+        $response = $this->client->get('users/' . $uid . '/factors');
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Enumerates all the supported factors that can be enrolled for the
      * specified user.
      *
-     * @param  string $uid User ID
+     * @param  string  $uid User ID
      *
-     * @return array       Array of Factors
+     * @return array  Array of Factors
      */
     public function catalog($uid)
     {
-        $request = $this->request->get('users/' . $uid . '/factors/catalog');
+        $response = $this->client->get('users/' . $uid . '/factors/catalog');
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Alias of $this->catalog()
      *
-     * @param  string $uid User ID
+     * @param  string  $uid User ID
      *
-     * @return array       Array of enrollable factors
+     * @return array  Array of enrollable factors
      */
     public function listEnrollable($uid)
     {
@@ -68,67 +68,66 @@ class Factor extends Base
     /**
      * Enumerates all available security questions for a user's question factor.
      *
-     * @param  string $uid User ID
+     * @param  string  $uid User ID
      *
-     * @return array       Array of available security questions
+     * @return array  Array of available security questions
      */
     public function listSecurityQuestions($uid)
     {
-        $request = $this->request->get('users/' . $uid . '/factors/questions');
+        $response = $this->client->get('users/' . $uid . '/factors/questions');
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Enrolls a user with a supported factor.
      *
-     * @param  string $uid    ID of user
-     * @param  array  $factor Array of factor properties
+     * @param  string  $uid  ID of user
+     * @param  array  $factor  Array of factor properties
      * @param  array  $query  Array of query parameters/values
      *
-     * @return object         Enrolled Factor
+     * @return object  Enrolled Factor
      */
-    public function enroll($uid, array $factor, array $query = null)
+    public function enroll($uid, array $factor, array $query = [])
     {
-        $request = $this->request->post('users/' . $uid . '/factors');
+        $response = $this->client->post('users/' . $uid . '/factors', [
+            'json' => $factor,
+            'query' => $query
+        ]);
 
-        $request->data($factor);
-
-        if (isset($query)) $request->query($query);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Convenience method for enrolling a user with a TOTP factor.
      *
-     * @param  string $uid User ID
+     * @param  string  $uid  User ID
      *
-     * @return object      Factor object
+     * @return object  Factor object
      */
     public function enrollTotp($uid)
     {
         return $this->enroll($uid, [
             'factorType' => 'token:software:totp',
-            'provider'   => 'GOOGLE'
+            'provider' => 'GOOGLE'
         ]);
     }
 
     /**
      * Convenience method for enrolling a user with a SMS factor.
      *
-     * @param  string $uid         User ID
-     * @param  string $phoneNumber Phone number
-     * @param  bool   $update      Update existing phone number when true
+     * @param  string  $uid  User ID
+     * @param  string  $phoneNumber  Phone number
+     * @param  bool  $update  Update existing phone number when true
      *
-     * @return object              Factor object
+     * @return object  Factor object
      */
     public function enrollSms($uid, $phoneNumber, $update = false)
     {
         return $this->enroll($uid, [
                 'factorType' => 'sms',
-                'provider'   => 'OKTA',
-                'profile'    => [
+                'provider' => 'OKTA',
+                'profile' => [
                     'phoneNumber' => $phoneNumber
                 ]
             ],
@@ -139,67 +138,65 @@ class Factor extends Base
     /**
      * Activates a factor by verifying the OTP.
      *
-     * @param  string $uid      User ID
-     * @param  string $fid      Factor ID
-     * @param  string $passCode OTP generated by device
+     * @param  string  $uid  User ID
+     * @param  string  $fid  Factor ID
+     * @param  string  $passCode  OTP generated by device
      *
-     * @return object           Factor object
+     * @return object  Factor object
      */
     public function activate($uid, $fid, $passCode)
     {
-        $request = $this->request->post('users/' . $uid . '/factors/' . $fid . '/lifecycle/activate');
+        $response = $this->client->post('users/' . $uid . '/factors/' . $fid . '/lifecycle/activate', [
+            'json' => ['passCode' => $passCode]
+        ]);
 
-        $request->data(['passCode' => $passCode]);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Unenrolls an existing factor for the specified user allowing the user to
      * enroll a new factor.
      *
-     * @param  string $uid User ID
-     * @param  string $fid Factor ID
+     * @param  string  $uid  User ID
+     * @param  string  $fid  Factor ID
      *
-     * @return null        '204 No Content'
+     * @return null  '204 No Content'
      */
     public function reset($uid, $fid)
     {
-        $request = $this->request->delete('users/' . $uid . '/factors/' . $fid);
+        $response = $this->client->delete('users/' . $uid . '/factors/' . $fid);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Verifies a factor.
      *
-     * @param  string $uid          ID of user
-     * @param  string $fid          ID of factor
-     * @param  array  $verification Array of factor verification properties
+     * @param  string  $uid  ID of user
+     * @param  string  $fid  ID of factor
+     * @param  array  $verification  Array of factor verification properties
      *
-     * @return object               Factor verification result object. If the
-     *                              answer is invalid you will receive a 403
-     *                              Forbidden status code.
+     * @return object  Factor verification result object. If the answer is
+     *                 invalid you will receive a 403 Forbidden status code.
      */
-    public function verify($uid, $fid, array $verification = null)
+    public function verify($uid, $fid, array $verification = [])
     {
-        $request = $this->request->post('users/' . $uid . '/factors/' . $fid . '/verify');
+        $response = $this->client->post('users/' . $uid . '/factors/' . $fid . '/verify', [
+            'json' => $verification
+        ]);
 
-        if (isset($verification)) $request->data($verification);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 
     /**
      * Convinience method for verifying a TOTP factor.
      *
-     * @param  string $uid      ID of user
-     * @param  string $fid      ID of factor
-     * @param  string $passCode OTP generated by device
+     * @param  string  $uid  ID of user
+     * @param  string  $fid  ID of factor
+     * @param  string  $passCode  OTP generated by device
      *
-     * @return object           Factor verification result object. If the answer
-     *                          is invalid you will receive a 403 Forbidden
-     *                          status code.
+     * @return object  Factor verification result object. If the answer is
+     *                 invalid you will receive a 403 Forbidden status code.
      */
     public function verifyTotp($uid, $fid, $passCode)
     {
@@ -209,13 +206,12 @@ class Factor extends Base
     /**
      * Convinience method for verifying a SMS factor.
      *
-     * @param  string $uid      ID of user
-     * @param  string $fid      ID of factor
-     * @param  string $passCode OTP sent to device
+     * @param  string  $uid  ID of user
+     * @param  string  $fid  ID of factor
+     * @param  string  $passCode  OTP sent to device
      *
-     * @return object           Factor verification result object. If the answer
-     *                          is invalid you will receive a 403 Forbidden
-     *                          status code.
+     * @return object  Factor verification result object. If the answer is
+     *                 invalid you will receive a 403 Forbidden status code.
      */
     public function verifySms($uid, $fid, $passCode)
     {
@@ -226,16 +222,16 @@ class Factor extends Base
      * Polls a push verification transaction for completion. The transaction
      * will have a result of WAITING, SUCCESS, REJECTED, or TIMEOUT.
      *
-     * @param  string $uid ID of user
-     * @param  string $fid ID of factor
-     * @param  string $tid ID of transaction
+     * @param  string  $uid  ID of user
+     * @param  string  $fid  ID of factor
+     * @param  string  $tid  ID of transaction
      *
-     * @return object      Factor verification result object
+     * @return object  Factor verification result object
      */
     public function poll($uid, $fid, $tid)
     {
-        $request = $this->request->get('users/' . $uid . '/factors/' . $fid . '/transactions/' . $tid);
+        $response = $this->client->get('users/' . $uid . '/factors/' . $fid . '/transactions/' . $tid);
 
-        return $request->send();
+        return $this->processResponse($response);
     }
 }

@@ -12,16 +12,16 @@ class Event extends Base
     /**
      * Fetch a list of events from your Okta organization system log
      *
-     * @param  array $query Array of query parameters/values
+     * @param  array  $query  Array of query parameters/values
      *
-     * @return array        Array of Events
+     * @return  array  Array of Events
      */
-    public function listEvents(array $query = null)
+    public function listEvents(array $query = [])
     {
-        $request = $this->request->get('events');
+        $response = $this->client->get('events', [
+            'query' => $query
+        ]);
 
-        if (isset($query)) $request->query($query);
-
-        return $request->send();
+        return $this->processResponse($response);
     }
 }
