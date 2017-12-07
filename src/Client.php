@@ -48,26 +48,17 @@ class Client
      * @param string $key       Your Okta API key
      * @param array  $config    Array of Client config key/values
      */
-    public function __construct($org, $key, array $config = [], $domain = 'okta.com')
+    public function __construct($org, $key, array $config = [])
     {
         $config = array_merge([
             'apiVersion' => 'v1',
             'bootstrap'  => true,
+            'domain'     => 'okta.com',
             'headers'    => [],
             'preview'    => false
         ], $config);
 
-        // We need to allow okta-emea.com domains.
-        // If the domains is explicitly defined, we use that.
-        if ($config['domain']) {
-          $domain = $config['domain'];
-        }
-        
-        // Maybe this can be client configurable too?
-        // For now lets keep the logic the same.
-        if ($config['preview']) {
-          $domain = 'oktapreview.com';
-        }
+        $domain = $config['preview'] ? 'oktapreview.com' : $config['domain'];
 
         $this->client = new GuzzleClient ([
             'base_uri'   => 'https://' . $org . '.' . $domain . '/api/' . $config['apiVersion'] . '/',
