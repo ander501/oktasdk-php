@@ -43,6 +43,27 @@ class Authentication extends Base
 
         return $request->send();
     }
+    
+    /**
+     * Activate an account
+     * 
+     * @param string $token     Activation Token from Okta
+     * @return object           Authentication Transaction Object
+     */
+    public function activateToken($token)
+    {
+        $request = $this->request->post('authn');
+        
+        $request->option('headers', [
+           'X-Forwarded-For' => $_SERVER['REMOTE_ADDR'], 
+        ]);
+        
+        $request->data([
+            'token' => $token,
+        ]);
+        
+        return $request->send();
+    }
 
     /**
      * This operation changes a user's password by providing the existing
